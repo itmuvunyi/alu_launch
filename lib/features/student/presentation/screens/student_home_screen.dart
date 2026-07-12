@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/constants/firestore_paths.dart';
+
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../authentication/models/app_user.dart';
 import '../../../authentication/providers/auth_providers.dart';
 import '../../../internships/models/opportunity.dart';
 import '../../../internships/providers/internship_providers.dart';
-import '../../../internships/repositories/internship_repository.dart';
+
 import '../../../applications/providers/application_providers.dart';
 import '../../../notifications/providers/notification_providers.dart';
 import '../../../messages/providers/message_providers.dart';

@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_spacing.dart';
+
 import '../../../../core/constants/firestore_paths.dart';
-import '../../../authentication/models/app_user.dart';
+
 import '../../../authentication/providers/auth_providers.dart';
 import '../../../startup/providers/startup_providers.dart';
 import '../../models/message.dart';

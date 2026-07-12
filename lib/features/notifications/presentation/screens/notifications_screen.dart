@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_spacing.dart';
-import '../../models/notification.dart';
+
 import '../../providers/notification_providers.dart';
 
 class NotificationsScreen extends ConsumerWidget {

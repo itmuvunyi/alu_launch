@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
 import '../../../internships/models/opportunity.dart';
-import '../../../internships/providers/internship_providers.dart';
+
 import '../../providers/startup_providers.dart';
 
 class CreateOpportunityScreen extends ConsumerStatefulWidget {

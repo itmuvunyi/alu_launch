@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../internships/providers/internship_providers.dart';
 import '../../providers/startup_providers.dart';
-import '../../models/startup.dart';
-import '../../../internships/models/opportunity.dart';
+
+
 
 class StartupProfileReadOnlyScreen extends ConsumerWidget {
   const StartupProfileReadOnlyScreen({required this.startupId, super.key});

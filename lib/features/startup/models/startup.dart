@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../core/constants/firestore_paths.dart';
+
 import '../../../core/utils/firestore_converters.dart';
 
 part 'startup.freezed.dart';

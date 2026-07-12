@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
 import '../../../authentication/providers/auth_providers.dart';
-import '../../../applications/models/application.dart';
+
 import '../../../applications/providers/application_providers.dart';
 import '../../models/startup.dart';
 import '../../providers/startup_providers.dart';

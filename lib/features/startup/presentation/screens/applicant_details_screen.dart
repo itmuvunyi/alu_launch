@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
-import '../../../applications/models/application.dart';
+
 import '../../../applications/providers/application_providers.dart';
 import '../../providers/startup_providers.dart';
 import '../../../messages/providers/message_providers.dart';

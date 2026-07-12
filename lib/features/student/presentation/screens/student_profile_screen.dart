@@ -13,7 +13,7 @@ import '../../../../core/constants/firestore_paths.dart';
 import '../../../authentication/providers/auth_providers.dart';
 import '../../../profile/providers/student_upload_controllers.dart';
 import '../../../applications/providers/application_providers.dart';
-import '../../../applications/models/application.dart';
+
 
 class StudentProfileScreen extends ConsumerStatefulWidget {
   const StudentProfileScreen({super.key});
