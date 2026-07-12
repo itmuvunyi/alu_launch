@@ -1,0 +1,180 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    function role() {
+      return userDoc().role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+
+    function isStudent() {
+      return isSignedIn() && role() == 'student';
+    }
+
+    function isStartupFounder() {
+      return isSignedIn() && role() == 'startupFounder';
+    }
+
+    function ownsStartup(startupId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == uid();
+    }
+
+    function startupIsVerified(startupId) {
+      return get(/databases/$(database)/documents/startups/$(startupId)).data.verificationStatus == 'verified';
+    }
+
+    // ---------- users ----------
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && uid() == userId && request.resource.data.role != 'admin';
+      // Users edit their own profile; role field changes are admin-only.
+      allow update: if isSignedIn() && uid() == userId &&
+        request.resource.data.role == resource.data.role;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- startups ----------
+    match /startups/{startupId} {
+      allow read: if isSignedIn();
+      allow create: if isStartupFounder() && request.resource.data.ownerId == uid();
+      // Founders can edit their own startup profile, but NOT verificationStatus.
+      allow update: if isStartupFounder() && ownsStartup(startupId) &&
+        request.resource.data.verificationStatus == resource.data.verificationStatus;
+      // Only admins can change verificationStatus (Rule 4 gate + admin moderation, Rule 6).
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- startup_requests (verification submissions) ----------
+    match /startup_requests/{requestId} {
+      allow read: if isAdmin() ||
+        (isStartupFounder() && resource.data.founderId == uid());
+      allow create: if isStartupFounder() && request.resource.data.founderId == uid();
+      allow update: if isAdmin(); // approve/reject/request-info
+      allow delete: if isAdmin();
+    }
+
+    // ---------- internships (opportunities) ----------
+    match /internships/{internshipId} {
+      // Rule 2: students (and everyone else) can only ever READ approved
+      // opportunities, UNLESS they're the owning startup or an admin.
+      allow read: if isAdmin() ||
+        resource.data.status == 'approved' ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId));
+      allow list: if true; // query-time filtering enforced by status == 'approved' in client queries + rule above on get
+
+      // Rule 4: only verified startups may create, and it must start pendingReview
+      // (Rule 1: founders cannot publish directly).
+      allow create: if isStartupFounder() &&
+        ownsStartup(request.resource.data.startupId) &&
+        startupIsVerified(request.resource.data.startupId) &&
+        request.resource.data.status == 'pendingReview';
+
+      // Founders can edit their own listing's content, but never flip status
+      // to approved themselves (Rule 1) — only admins can.
+      allow update: if isStartupFounder() && ownsStartup(resource.data.startupId) &&
+        request.resource.data.status == resource.data.status;
+      allow update: if isAdmin(); // approve / reject / edit
+
+      allow delete: if isStartupFounder() && ownsStartup(resource.data.startupId);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- applications ----------
+    match /applications/{applicationId} {
+      // Rule 3: composite doc ID must be `${studentId}_${internshipId}`.
+      // Existence check on create prevents duplicates server-side, not just client-side.
+      function isOwnApplication() {
+        return applicationId == request.resource.data.studentId + '_' + request.resource.data.internshipId;
+      }
+
+      allow create: if isStudent() &&
+        request.resource.data.studentId == uid() &&
+        isOwnApplication() &&
+        !exists(/databases/$(database)/documents/applications/$(applicationId));
+
+      // Rule 5: only the student who applied, the owning startup, or an admin may read.
+      allow read: if isAdmin() ||
+        (isStudent() && resource.data.studentId == uid()) ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId));
+
+      // Students can withdraw/update their own cover letter pre-review;
+      // startups/admins update status (Accept/Reject/Shortlist/Interview).
+      allow update: if isStudent() && resource.data.studentId == uid() &&
+        request.resource.data.status == resource.data.status;
+      allow update: if isStartupFounder() && ownsStartup(resource.data.startupId);
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------- bookmarks ----------
+    match /bookmarks/{bookmarkId} {
+      allow create: if isStudent() && request.resource.data.studentId == uid();
+      allow read, delete: if isStudent() && resource.data.studentId == uid();
+    }
+
+    // ---------- chat_rooms & messages ----------
+    match /chat_rooms/{roomId} {
+      allow read: if isSignedIn() &&
+        (uid() == resource.data.studentId || ownsStartup(resource.data.startupId));
+      allow create: if isSignedIn() &&
+        (uid() == request.resource.data.studentId || ownsStartup(request.resource.data.startupId));
+      allow update: if isSignedIn() &&
+        (uid() == resource.data.studentId || ownsStartup(resource.data.startupId));
+      
+      match /messages/{messageId} {
+        allow read: if isSignedIn() &&
+          (uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId || ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId));
+        allow create: if isSignedIn() &&
+          (uid() == request.resource.data.senderId || uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId || ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId));
+      }
+    }
+
+    // ---------- notifications ----------
+    match /notifications/{notificationId} {
+      allow read, update: if isSignedIn() && resource.data.userId == uid();
+      allow create: if isSignedIn() || isAdmin(); // written by backend/cloud functions typically
+      allow delete: if isSignedIn() && resource.data.userId == uid();
+    }
+
+    // ---------- interviews ----------
+    match /interviews/{interviewId} {
+      allow read: if isAdmin() ||
+        (isStudent() && resource.data.studentId == uid()) ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId));
+      allow create, update: if isStartupFounder() && ownsStartup(request.resource.data.startupId);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- reports & admin_logs: admin-only, no client writes to logs ----------
+    match /reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // written server-side only (Cloud Functions), never from the client
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "786887820794",
+    "project_id": "alu-launch",
+    "storage_bucket": "alu-launch.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:786887820794:android:b51fc4e908b29985b1d043",
+        "android_client_info": {
+          "package_name": "com.example.alu_launch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "786887820794-cehr31biecuimllc94ojl8n9evb7ggnl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.alu_launch",
+            "certificate_hash": "44f1851d69c05a16135639b60023cc20b3289617"
+          }
+        },
+        {
+          "client_id": "786887820794-s9f6immqkre3h2s4hkbi44i9fuph2492.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl8oVYQ5jebnrQKp5GqHgHrPQe7hRRnp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "786887820794-s9f6immqkre3h2s4hkbi44i9fuph2492.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "786887820794-vh0123v6lec099088ke85v513040nbm8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.aluLaunch"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

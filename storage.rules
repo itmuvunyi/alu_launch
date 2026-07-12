@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    match /profile_pictures/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && uid() == userId &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    match /startup_logos/{startupId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() &&
+        firestore.get(/databases/(default)/documents/startups/$(startupId)).data.ownerId == uid() &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    match /resumes/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && uid() == userId &&
+        request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType == 'application/pdf';
+    }
+
+    match /portfolios/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && uid() == userId &&
+        request.resource.size < 20 * 1024 * 1024;
+    }
+
+    match /verification_docs/{startupId}/{fileName} {
+      allow read: if isSignedIn() &&
+        (firestore.get(/databases/(default)/documents/startups/$(startupId)).data.ownerId == uid() ||
+         firestore.get(/databases/(default)/documents/users/$(uid())).data.role == 'admin');
+      allow write: if isSignedIn() &&
+        firestore.get(/databases/(default)/documents/startups/$(startupId)).data.ownerId == uid() &&
+        request.resource.size < 10 * 1024 * 1024;
+    }
+  }
+}

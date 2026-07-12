@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "alu-launch",
+          "appId": "1:786887820794:android:b51fc4e908b29985b1d043",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "alu-launch",
+          "configurations": {
+            "android": "1:786887820794:android:b51fc4e908b29985b1d043",
+            "web": "1:786887820794:web:3dc4915d60b16ac3b1d043"
+          }
+        }
+      }
+    }
+  }
+}
