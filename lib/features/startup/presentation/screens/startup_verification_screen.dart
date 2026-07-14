@@ -55,7 +55,7 @@ class StartupVerificationScreen extends ConsumerWidget {
           });
 
           // Check if document was uploaded
-          final hasUploaded = startup.logoUrl != null; // Actually check verification doc path in startup model
+          final hasUploaded = startup.verificationDocPath != null && startup.verificationDocPath!.isNotEmpty;
           // Wait, does startup model have verificationDocPath? Let's check `lib/features/startup/models/startup.dart` if we added it.
           // Wait! In `startup.dart`, does startup model have `verificationDocPath`?
           // Let's look at `startup.dart`:

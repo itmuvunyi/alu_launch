@@ -372,6 +372,7 @@ mixin _$Application {
   String get studentName;
   String get studentEmail;
   String? get studentResumeUrl;
+  List<String>? get studentPortfolioUrls;
   ApplicationStatus get status;
   List<ApplicationTimelineEvent> get timeline;
   @TimestampConverter()
@@ -411,6 +412,8 @@ mixin _$Application {
                 other.studentEmail == studentEmail) &&
             (identical(other.studentResumeUrl, studentResumeUrl) ||
                 other.studentResumeUrl == studentResumeUrl) &&
+            const DeepCollectionEquality()
+                .equals(other.studentPortfolioUrls, studentPortfolioUrls) &&
             (identical(other.status, status) || other.status == status) &&
             const DeepCollectionEquality().equals(other.timeline, timeline) &&
             (identical(other.createdAt, createdAt) ||
@@ -432,6 +435,7 @@ mixin _$Application {
       studentName,
       studentEmail,
       studentResumeUrl,
+      const DeepCollectionEquality().hash(studentPortfolioUrls),
       status,
       const DeepCollectionEquality().hash(timeline),
       createdAt,
@@ -439,7 +443,7 @@ mixin _$Application {
 
   @override
   String toString() {
-    return 'Application(id: $id, opportunityId: $opportunityId, opportunityTitle: $opportunityTitle, startupId: $startupId, startupName: $startupName, studentId: $studentId, studentName: $studentName, studentEmail: $studentEmail, studentResumeUrl: $studentResumeUrl, status: $status, timeline: $timeline, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Application(id: $id, opportunityId: $opportunityId, opportunityTitle: $opportunityTitle, startupId: $startupId, startupName: $startupName, studentId: $studentId, studentName: $studentName, studentEmail: $studentEmail, studentResumeUrl: $studentResumeUrl, studentPortfolioUrls: $studentPortfolioUrls, status: $status, timeline: $timeline, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -459,6 +463,7 @@ abstract mixin class $ApplicationCopyWith<$Res> {
       String studentName,
       String studentEmail,
       String? studentResumeUrl,
+      List<String>? studentPortfolioUrls,
       ApplicationStatus status,
       List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() DateTime createdAt,
@@ -486,6 +491,7 @@ class _$ApplicationCopyWithImpl<$Res> implements $ApplicationCopyWith<$Res> {
     Object? studentName = null,
     Object? studentEmail = null,
     Object? studentResumeUrl = freezed,
+    Object? studentPortfolioUrls = freezed,
     Object? status = null,
     Object? timeline = null,
     Object? createdAt = null,
@@ -528,6 +534,10 @@ class _$ApplicationCopyWithImpl<$Res> implements $ApplicationCopyWith<$Res> {
           ? _self.studentResumeUrl
           : studentResumeUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      studentPortfolioUrls: freezed == studentPortfolioUrls
+          ? _self.studentPortfolioUrls
+          : studentPortfolioUrls // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -651,6 +661,7 @@ extension ApplicationPatterns on Application {
             String studentName,
             String studentEmail,
             String? studentResumeUrl,
+            List<String>? studentPortfolioUrls,
             ApplicationStatus status,
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
@@ -671,6 +682,7 @@ extension ApplicationPatterns on Application {
             _that.studentName,
             _that.studentEmail,
             _that.studentResumeUrl,
+            _that.studentPortfolioUrls,
             _that.status,
             _that.timeline,
             _that.createdAt,
@@ -705,6 +717,7 @@ extension ApplicationPatterns on Application {
             String studentName,
             String studentEmail,
             String? studentResumeUrl,
+            List<String>? studentPortfolioUrls,
             ApplicationStatus status,
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
@@ -724,6 +737,7 @@ extension ApplicationPatterns on Application {
             _that.studentName,
             _that.studentEmail,
             _that.studentResumeUrl,
+            _that.studentPortfolioUrls,
             _that.status,
             _that.timeline,
             _that.createdAt,
@@ -757,6 +771,7 @@ extension ApplicationPatterns on Application {
             String studentName,
             String studentEmail,
             String? studentResumeUrl,
+            List<String>? studentPortfolioUrls,
             ApplicationStatus status,
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
@@ -776,6 +791,7 @@ extension ApplicationPatterns on Application {
             _that.studentName,
             _that.studentEmail,
             _that.studentResumeUrl,
+            _that.studentPortfolioUrls,
             _that.status,
             _that.timeline,
             _that.createdAt,
@@ -799,11 +815,13 @@ class _Application implements Application {
       required this.studentName,
       required this.studentEmail,
       this.studentResumeUrl,
+      final List<String>? studentPortfolioUrls,
       this.status = ApplicationStatus.applied,
       required final List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() required this.createdAt,
       @NullableTimestampConverter() this.updatedAt})
-      : _timeline = timeline;
+      : _studentPortfolioUrls = studentPortfolioUrls,
+        _timeline = timeline;
   factory _Application.fromJson(Map<String, dynamic> json) =>
       _$ApplicationFromJson(json);
 
@@ -825,6 +843,17 @@ class _Application implements Application {
   final String studentEmail;
   @override
   final String? studentResumeUrl;
+  final List<String>? _studentPortfolioUrls;
+  @override
+  List<String>? get studentPortfolioUrls {
+    final value = _studentPortfolioUrls;
+    if (value == null) return null;
+    if (_studentPortfolioUrls is EqualUnmodifiableListView)
+      return _studentPortfolioUrls;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   @JsonKey()
   final ApplicationStatus status;
@@ -880,6 +909,8 @@ class _Application implements Application {
                 other.studentEmail == studentEmail) &&
             (identical(other.studentResumeUrl, studentResumeUrl) ||
                 other.studentResumeUrl == studentResumeUrl) &&
+            const DeepCollectionEquality()
+                .equals(other._studentPortfolioUrls, _studentPortfolioUrls) &&
             (identical(other.status, status) || other.status == status) &&
             const DeepCollectionEquality().equals(other._timeline, _timeline) &&
             (identical(other.createdAt, createdAt) ||
@@ -901,6 +932,7 @@ class _Application implements Application {
       studentName,
       studentEmail,
       studentResumeUrl,
+      const DeepCollectionEquality().hash(_studentPortfolioUrls),
       status,
       const DeepCollectionEquality().hash(_timeline),
       createdAt,
@@ -908,7 +940,7 @@ class _Application implements Application {
 
   @override
   String toString() {
-    return 'Application(id: $id, opportunityId: $opportunityId, opportunityTitle: $opportunityTitle, startupId: $startupId, startupName: $startupName, studentId: $studentId, studentName: $studentName, studentEmail: $studentEmail, studentResumeUrl: $studentResumeUrl, status: $status, timeline: $timeline, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Application(id: $id, opportunityId: $opportunityId, opportunityTitle: $opportunityTitle, startupId: $startupId, startupName: $startupName, studentId: $studentId, studentName: $studentName, studentEmail: $studentEmail, studentResumeUrl: $studentResumeUrl, studentPortfolioUrls: $studentPortfolioUrls, status: $status, timeline: $timeline, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -930,6 +962,7 @@ abstract mixin class _$ApplicationCopyWith<$Res>
       String studentName,
       String studentEmail,
       String? studentResumeUrl,
+      List<String>? studentPortfolioUrls,
       ApplicationStatus status,
       List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() DateTime createdAt,
@@ -957,6 +990,7 @@ class __$ApplicationCopyWithImpl<$Res> implements _$ApplicationCopyWith<$Res> {
     Object? studentName = null,
     Object? studentEmail = null,
     Object? studentResumeUrl = freezed,
+    Object? studentPortfolioUrls = freezed,
     Object? status = null,
     Object? timeline = null,
     Object? createdAt = null,
@@ -999,6 +1033,10 @@ class __$ApplicationCopyWithImpl<$Res> implements _$ApplicationCopyWith<$Res> {
           ? _self.studentResumeUrl
           : studentResumeUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      studentPortfolioUrls: freezed == studentPortfolioUrls
+          ? _self._studentPortfolioUrls
+          : studentPortfolioUrls // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable

@@ -31,7 +31,7 @@ class PlaceholderStorageService implements IStorageService {
     // TODO: Connect real Supabase Storage upload when keys are configured
     print('PlaceholderStorageService: Simulating upload of ${bytes.length} bytes to ${bucket.bucketName}/$path');
     await Future.delayed(const Duration(milliseconds: 800)); // Simulate network latency
-    return 'https://raw.githubusercontent.com/itmuvunyi/flutter-expansiontile-demo/main/placeholder.png'; // standard fallback
+    return ''; // standard fallback
   }
 
   @override
@@ -49,7 +49,7 @@ class PlaceholderStorageService implements IStorageService {
     required String path,
     Duration expiresIn = const Duration(hours: 1),
   }) async {
-    return 'https://raw.githubusercontent.com/itmuvunyi/flutter-expansiontile-demo/main/placeholder.png';
+    return '';
   }
 }
 

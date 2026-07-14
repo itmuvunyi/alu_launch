@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../features/authentication/models/app_user.dart';
 
 import '../constants/firestore_paths.dart';
 import '../../features/authentication/presentation/screens/splash_screen.dart';
@@ -36,10 +39,53 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/messages/presentation/screens/chat_inbox_screen.dart';
 import '../../features/messages/presentation/screens/chat_screen.dart';
 
+/// Notifies GoRouter when authentication state meaningfully changes (sign
+/// in/out, role change).
+///
+/// **Critical**: the notification is deferred to a post-frame callback.
+/// `ref.listen` callbacks fire synchronously during Riverpod's provider
+/// evaluation, which itself runs inside the widget build phase. Calling
+/// `notifyListeners()` synchronously would cause GoRouter to mark its
+/// delegate dirty in the *wrong build scope*, producing:
+///   - "Tried to build dirty widget in the wrong build scope"
+///   - MouseTracker assertions (widget tree mutates during pointer event)
+///
+/// Deferring ensures GoRouter processes the route change in the *next*
+/// frame, after the current build/layout/paint cycle completes.
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(Ref ref) {
-    ref.listen(firebaseAuthStateProvider, (_, __) => notifyListeners());
-    ref.listen(currentUserProvider, (_, __) => notifyListeners());
+    ref.listen<AsyncValue<fb_auth.User?>>(
+      firebaseAuthStateProvider,
+      (prev, next) {
+        final prevUid = prev?.valueOrNull?.uid;
+        final nextUid = next.valueOrNull?.uid;
+        if (prevUid != nextUid) _scheduleNotify();
+      },
+    );
+    ref.listen<AsyncValue<AppUser?>>(
+      currentUserProvider,
+      (prev, next) {
+        final prevUser = prev?.valueOrNull;
+        final nextUser = next.valueOrNull;
+        final changed = (prevUser == null) != (nextUser == null) ||
+            prevUser?.role != nextUser?.role;
+        if (changed) _scheduleNotify();
+      },
+    );
+  }
+
+  bool _notifyScheduled = false;
+
+  /// Coalesces multiple provider changes within the same frame into a
+  /// single GoRouter refresh, and ensures it fires after the current
+  /// build/layout/paint cycle.
+  void _scheduleNotify() {
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      notifyListeners();
+    });
   }
 }
 
@@ -64,57 +110,42 @@ class StudentMainLayout extends StatefulWidget {
 }
 
 class _StudentMainLayoutState extends State<StudentMainLayout> {
-  bool _ignorePointers = false;
-
   void _onDestinationSelected(int index) {
-    if (_ignorePointers) return;
-    setState(() => _ignorePointers = true);
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,
     );
-    Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        setState(() => _ignorePointers = false);
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IgnorePointer(
-        ignoring: _ignorePointers,
-        child: widget.navigationShell,
-      ),
-      bottomNavigationBar: IgnorePointer(
-        ignoring: _ignorePointers,
-        child: NavigationBar(
-          selectedIndex: widget.navigationShell.currentIndex,
-          onDestinationSelected: _onDestinationSelected,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.explore_outlined),
-              selectedIcon: Icon(Icons.explore),
-              label: 'Explore',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.send_outlined),
-              selectedIcon: Icon(Icons.send),
-              label: 'Applications',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+      body: widget.navigationShell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: widget.navigationShell.currentIndex,
+        onDestinationSelected: _onDestinationSelected,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.send_outlined),
+            selectedIcon: Icon(Icons.send),
+            label: 'Applications',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
@@ -157,7 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (appUser == null) {
         if (loc == '/register/complete-google') return null;
-        return loc == '/splash' ? null : '/splash';
+        // Inconsistent/corrupted state: Firebase Auth user exists but Firestore user document is missing.
+        // Sign out to clear Auth state and redirect back to login to prevent splash screen hang.
+        ref.read(authRepositoryProvider).signOut();
+        return '/login';
       }
 
       // Role-based route gating guards

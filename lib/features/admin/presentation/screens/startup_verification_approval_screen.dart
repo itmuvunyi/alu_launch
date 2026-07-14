@@ -5,13 +5,30 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
+import '../../../../core/providers/firebase_providers.dart';
 import '../../../startup/models/startup.dart';
 import '../../../startup/providers/startup_upload_controllers.dart';
+
+final unverifiedStartupsStreamProvider = StreamProvider.autoDispose<List<Startup>>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  return firestore
+      .collection(FirestoreCollections.startups)
+      .where('isVerified', isEqualTo: false)
+      .snapshots()
+      .map((snapshot) {
+    final docs = snapshot.docs.where((doc) {
+      final data = doc.data();
+      return data.containsKey('verificationDocPath') && data['verificationDocPath'] != null;
+    }).toList();
+
+    return docs.map((doc) => Startup.fromJson({...doc.data(), 'id': doc.id})).toList();
+  });
+});
 
 class StartupVerificationApprovalScreen extends ConsumerWidget {
   const StartupVerificationApprovalScreen({super.key});
 
-  Future<void> _approveStartup(BuildContext context, Startup startup) async {
+  Future<void> _approveStartup(BuildContext context, WidgetRef ref, Startup startup) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -26,7 +43,7 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
+        await ref.read(firestoreProvider)
             .collection(FirestoreCollections.startups)
             .doc(startup.id)
             .update({'isVerified': true});
@@ -42,7 +59,7 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _rejectStartup(BuildContext context, Startup startup) async {
+  Future<void> _rejectStartup(BuildContext context, WidgetRef ref, Startup startup) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -57,7 +74,7 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
+        await ref.read(firestoreProvider)
             .collection(FirestoreCollections.startups)
             .doc(startup.id)
             .update({
@@ -79,31 +96,17 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final startupsAsync = ref.watch(unverifiedStartupsStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Startup Verification Approvals'),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection(FirestoreCollections.startups)
-            .where('isVerified', isEqualTo: false)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          // Filter documents client-side that have verificationDocPath uploaded
-          final docs = (snapshot.data?.docs ?? []).where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return data.containsKey('verificationDocPath') && data['verificationDocPath'] != null;
-          }).toList();
-
-          if (docs.isEmpty) {
+      body: startupsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, st) => Center(child: Text('Error: $err')),
+        data: (startups) {
+          if (startups.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -120,8 +123,6 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
               ),
             );
           }
-
-          final startups = docs.map((doc) => Startup.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
 
           return ListView.builder(
             padding: const EdgeInsets.all(AppSpacing.marginMobile),
@@ -151,37 +152,41 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
                           const SizedBox(height: AppSpacing.md),
 
                           // Load Signed Document URL from Supabase Storage
-                          ref.watch(verificationDocSignedUrlProvider(startup.verificationDocPath!)).when(
-                                loading: () => const Center(child: CircularProgressIndicator()),
-                                error: (err, st) => Text('Error loading document: $err', style: TextStyle(color: theme.colorScheme.error)),
-                                data: (signedUrl) => Container(
-                                  padding: const EdgeInsets.all(AppSpacing.md),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surfaceContainer,
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
-                                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.picture_as_pdf, color: theme.colorScheme.primary, size: 28),
-                                      const SizedBox(width: AppSpacing.md),
-                                      const Expanded(
-                                        child: Text('Verification_Document.pdf', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Consumer(
+                            builder: (context, ref, child) {
+                              return ref.watch(verificationDocSignedUrlProvider(startup.verificationDocPath!)).when(
+                                    loading: () => const Center(child: CircularProgressIndicator()),
+                                    error: (err, st) => Text('Error loading document: $err', style: TextStyle(color: theme.colorScheme.error)),
+                                    data: (signedUrl) => Container(
+                                      padding: const EdgeInsets.all(AppSpacing.md),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainer,
+                                        borderRadius: BorderRadius.circular(AppRadius.md),
+                                        border: Border.all(color: theme.colorScheme.outlineVariant),
                                       ),
-                                      ElevatedButton.icon(
-                                        onPressed: () async {
-                                          final url = Uri.parse(signedUrl);
-                                          if (await canLaunchUrl(url)) {
-                                            await launchUrl(url, mode: LaunchMode.externalApplication);
-                                          }
-                                        },
-                                        icon: const Icon(Icons.open_in_new, size: 16),
-                                        label: const Text('Open PDF'),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.picture_as_pdf, color: theme.colorScheme.primary, size: 28),
+                                          const SizedBox(width: AppSpacing.md),
+                                          const Expanded(
+                                            child: Text('Verification_Document.pdf', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          ),
+                                          ElevatedButton.icon(
+                                            onPressed: () async {
+                                              final url = Uri.parse(signedUrl);
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                                              }
+                                            },
+                                            icon: const Icon(Icons.open_in_new, size: 16),
+                                            label: const Text('Open PDF'),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                                    ),
+                                  );
+                            },
+                          ),
                           const SizedBox(height: AppSpacing.lg),
 
                           Row(
@@ -194,7 +199,7 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
                                 ),
                                 icon: const Icon(Icons.cancel_outlined, size: 16),
                                 label: const Text('Reject'),
-                                onPressed: () => _rejectStartup(context, startup),
+                                onPressed: () => _rejectStartup(context, ref, startup),
                               ),
                               const SizedBox(width: AppSpacing.md),
                               ElevatedButton.icon(
@@ -204,7 +209,7 @@ class StartupVerificationApprovalScreen extends ConsumerWidget {
                                 ),
                                 icon: const Icon(Icons.verified_outlined, size: 16),
                                 label: const Text('Verify Startup'),
-                                onPressed: () => _approveStartup(context, startup),
+                                onPressed: () => _approveStartup(context, ref, startup),
                               ),
                             ],
                           ),

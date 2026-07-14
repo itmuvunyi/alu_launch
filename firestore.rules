@@ -38,7 +38,7 @@ service cloud.firestore {
     }
 
     function startupIsVerified(startupId) {
-      return get(/databases/$(database)/documents/startups/$(startupId)).data.verificationStatus == 'verified';
+      return get(/databases/$(database)/documents/startups/$(startupId)).data.isVerified == true;
     }
 
     // ---------- users ----------
@@ -56,10 +56,10 @@ service cloud.firestore {
     match /startups/{startupId} {
       allow read: if isSignedIn();
       allow create: if isStartupFounder() && request.resource.data.ownerId == uid();
-      // Founders can edit their own startup profile, but NOT verificationStatus.
+      // Founders can edit their own startup profile, but NOT isVerified.
       allow update: if isStartupFounder() && ownsStartup(startupId) &&
-        request.resource.data.verificationStatus == resource.data.verificationStatus;
-      // Only admins can change verificationStatus (Rule 4 gate + admin moderation, Rule 6).
+        request.resource.data.isVerified == resource.data.isVerified;
+      // Only admins can change isVerified (Rule 4 gate + admin moderation, Rule 6).
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -80,7 +80,9 @@ service cloud.firestore {
       allow read: if isAdmin() ||
         resource.data.status == 'approved' ||
         (isStartupFounder() && ownsStartup(resource.data.startupId));
-      allow list: if true; // query-time filtering enforced by status == 'approved' in client queries + rule above on get
+      allow list: if isAdmin() ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId)) ||
+        (resource.data.status == 'approved');
 
       // Rule 4: only verified startups may create, and it must start pendingReview
       // (Rule 1: founders cannot publish directly).
@@ -113,7 +115,10 @@ service cloud.firestore {
         !exists(/databases/$(database)/documents/applications/$(applicationId));
 
       // Rule 5: only the student who applied, the owning startup, or an admin may read.
-      allow read: if isAdmin() ||
+      allow get: if isAdmin() ||
+        (isStudent() && resource.data.studentId == uid()) ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId));
+      allow list: if isAdmin() ||
         (isStudent() && resource.data.studentId == uid()) ||
         (isStartupFounder() && ownsStartup(resource.data.startupId));
 
@@ -129,24 +134,34 @@ service cloud.firestore {
 
     // ---------- bookmarks ----------
     match /bookmarks/{bookmarkId} {
-      allow create: if isStudent() && request.resource.data.studentId == uid();
-      allow read, delete: if isStudent() && resource.data.studentId == uid();
+      allow create: if isStudent() && request.resource.data.userId == uid();
+      allow read, delete: if isStudent() && resource.data.userId == uid();
     }
 
     // ---------- chat_rooms & messages ----------
     match /chat_rooms/{roomId} {
-      allow read: if isSignedIn() &&
-        (uid() == resource.data.studentId || ownsStartup(resource.data.startupId));
-      allow create: if isSignedIn() &&
-        (uid() == request.resource.data.studentId || ownsStartup(request.resource.data.startupId));
-      allow update: if isSignedIn() &&
-        (uid() == resource.data.studentId || ownsStartup(resource.data.startupId));
+      allow get: if isSignedIn() && (
+        resource == null ||
+        uid() == resource.data.studentId ||
+        ownsStartup(resource.data.startupId)
+      );
+      allow list: if isAdmin() ||
+        (isStudent() && resource.data.studentId == uid()) ||
+        (isStartupFounder() && ownsStartup(resource.data.startupId));
+      allow create: if isSignedIn() && (
+        uid() == request.resource.data.studentId ||
+        ownsStartup(request.resource.data.startupId)
+      );
+      allow update: if isSignedIn() && (
+        uid() == resource.data.studentId ||
+        ownsStartup(resource.data.startupId)
+      );
       
       match /messages/{messageId} {
-        allow read: if isSignedIn() &&
-          (uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId || ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId));
-        allow create: if isSignedIn() &&
-          (uid() == request.resource.data.senderId || uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId || ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId));
+        allow read, create: if isSignedIn() && (
+          uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId ||
+          ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId)
+        );
       }
     }
 

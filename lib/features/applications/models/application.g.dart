@@ -41,6 +41,9 @@ _Application _$ApplicationFromJson(Map<String, dynamic> json) => _Application(
       studentName: json['studentName'] as String,
       studentEmail: json['studentEmail'] as String,
       studentResumeUrl: json['studentResumeUrl'] as String?,
+      studentPortfolioUrls: (json['studentPortfolioUrls'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       status: $enumDecodeNullable(_$ApplicationStatusEnumMap, json['status']) ??
           ApplicationStatus.applied,
       timeline: (json['timeline'] as List<dynamic>)
@@ -62,6 +65,7 @@ Map<String, dynamic> _$ApplicationToJson(_Application instance) =>
       'studentName': instance.studentName,
       'studentEmail': instance.studentEmail,
       'studentResumeUrl': instance.studentResumeUrl,
+      'studentPortfolioUrls': instance.studentPortfolioUrls,
       'status': _$ApplicationStatusEnumMap[instance.status]!,
       'timeline': instance.timeline,
       'createdAt': const TimestampConverter().toJson(instance.createdAt),

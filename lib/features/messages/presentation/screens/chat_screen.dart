@@ -122,7 +122,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           : null,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    Flexible(
                       child: Text(
                         chatPartnerName,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

@@ -23,7 +23,7 @@ class AvatarUploadController extends FileUploadController {
 
   @override
   String buildPath(String fileName) {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) {
       throw StateError('Cannot upload avatar: no signed-in user.');
     }
@@ -34,7 +34,7 @@ class AvatarUploadController extends FileUploadController {
 
   @override
   Future<void> persistUrl(String url) async {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) return;
     await ref
         .read(firestoreProvider)
@@ -59,7 +59,7 @@ class ResumeUploadController extends FileUploadController {
 
   @override
   String buildPath(String fileName) {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) {
       throw StateError('Cannot upload resume: no signed-in user.');
     }
@@ -68,7 +68,7 @@ class ResumeUploadController extends FileUploadController {
 
   @override
   Future<void> persistUrl(String url) async {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) return;
     await ref
         .read(firestoreProvider)
@@ -95,7 +95,7 @@ class PortfolioUploadController extends FileUploadController {
 
   @override
   String buildPath(String fileName) {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) {
       throw StateError('Cannot upload portfolio file: no signed-in user.');
     }
@@ -108,7 +108,7 @@ class PortfolioUploadController extends FileUploadController {
 
   @override
   Future<void> persistUrl(String url) async {
-    final uid = ref.read(currentUserIdProvider).value;
+    final uid = ref.read(currentUserIdProvider).valueOrNull;
     if (uid == null) return;
     await ref
         .read(firestoreProvider)

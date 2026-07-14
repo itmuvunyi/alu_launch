@@ -29,7 +29,6 @@ class _OpportunityDetailsScreenState extends ConsumerState<OpportunityDetailsScr
             opportunityTitle: opp.title,
             startupId: opp.startupId,
             startupName: opp.startupName,
-            studentResumeUrl: 'https://placeholder-resume.pdf', // placeholder resume URL bypass
           );
 
       if (!mounted) return;
@@ -37,9 +36,7 @@ class _OpportunityDetailsScreenState extends ConsumerState<OpportunityDetailsScr
         const SnackBar(content: Text('Application submitted successfully!')),
       );
       Navigator.of(context).pop(); // Close bottom sheet
-      context.pop(); // Go back or go to applications
-      // Switch tab to Applications using GoRouter
-      StatefulNavigationShell.of(context).goBranch(2);
+      context.go('/student/applications');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,89 +53,141 @@ class _OpportunityDetailsScreenState extends ConsumerState<OpportunityDetailsScr
       isScrollControlled: true,
       builder: (context) {
         final theme = Theme.of(context);
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: EdgeInsets.only(
-                left: AppSpacing.marginMobile,
-                right: AppSpacing.marginMobile,
-                top: AppSpacing.lg,
-                bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Apply for ${opp.title}',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'at ${opp.startupName}',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+        return Consumer(
+          builder: (context, ref, child) {
+            final user = ref.watch(currentUserProvider).valueOrNull;
+            final resumeUrl = user?.resumeUrl;
+            final hasResume = resumeUrl != null && resumeUrl.isNotEmpty;
+            final portfolioUrls = user?.portfolioUrls ?? [];
+            final hasPortfolio = portfolioUrls.isNotEmpty;
 
-                  // Resume Upload Placeholder Warning
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: theme.colorScheme.outlineVariant),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return Container(
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.marginMobile,
+                    right: AppSpacing.marginMobile,
+                    top: AppSpacing.lg,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.outlineVariant,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        'Apply for ${opp.title}',
+                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'at ${opp.startupName}',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Resume & Portfolio Verification Card
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: hasResume
+                              ? theme.colorScheme.primaryContainer.withOpacity(0.05)
+                              : theme.colorScheme.errorContainer.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: hasResume
+                                ? theme.colorScheme.primary.withOpacity(0.3)
+                                : theme.colorScheme.error.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.cloud_upload_outlined, color: theme.colorScheme.primary),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              'Resume & Portfolio',
-                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                            Row(
+                              children: [
+                                Icon(
+                                  hasResume ? Icons.check_circle_outline : Icons.error_outline,
+                                  color: hasResume ? theme.colorScheme.primary : theme.colorScheme.error,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Text(
+                                  'Required Documents',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: hasResume ? theme.colorScheme.primary : theme.colorScheme.error,
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: AppSpacing.xs),
+                            if (hasResume) ...[
+                              Text(
+                                '✓ Resume is ready for submission.',
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
+                              ),
+                              if (hasPortfolio) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '✓ ${portfolioUrls.length} portfolio link(s) will be attached.',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
+                                ),
+                              ] else ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ℹ No portfolio links uploaded (optional).',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                ),
+                              ],
+                            ] else ...[
+                              Text(
+                                'No resume uploaded! You must upload a resume PDF in your profile tab before you can apply for this internship.',
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                              ),
+                            ],
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          'Note: Resume uploads are bypassed because storage is not configured yet. A placeholder document will be submitted with your application.',
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      ElevatedButton(
+                        onPressed: (!hasResume || _isSubmitting)
+                            ? null
+                            : () async {
+                                setModalState(() => _isSubmitting = true);
+                                await _handleApply(opp);
+                              },
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Submit Application'),
+                      ),
+                      if (!hasResume) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Close bottom sheet
+                            context.go('/student/profile');
+                          },
+                          child: const Text('Go to Profile to Upload'),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  ElevatedButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () async {
-                            setModalState(() => _isSubmitting = true);
-                            await _handleApply(opp);
-                          },
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Submit Application'),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );

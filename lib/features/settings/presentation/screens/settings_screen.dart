@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/providers/theme_provider.dart';
 import '../../../authentication/providers/auth_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -80,7 +80,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: const Text('Theme Mode'),
                   subtitle: const Text('Switch between light, dark, and system modes'),
                   trailing: DropdownButton<ThemeMode>(
-                    value: ThemeMode.system,
+                    value: ref.watch(themeProvider),
                     underline: const SizedBox(),
                     items: const [
                       DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
@@ -88,10 +88,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
                     ],
                     onChanged: (mode) {
-                      // Note: Standard state logic to change system theme if desired
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Theme set to ${mode?.name.toUpperCase()}')),
-                      );
+                      if (mode != null) {
+                        ref.read(themeProvider.notifier).setThemeMode(mode);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Theme set to ${mode.name.toUpperCase()}')),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -162,6 +164,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.orange),
+              title: const Text('Log Out', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Sign out of your account'),
+              onTap: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Log Out?'),
+                    content: const Text('Are you sure you want to log out of your account?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text('Log Out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await ref.read(authControllerProvider.notifier).signOut();
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
 
           // Security / Danger Section
           Card(

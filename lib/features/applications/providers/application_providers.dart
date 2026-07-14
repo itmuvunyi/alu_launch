@@ -32,12 +32,16 @@ class ApplyController extends AutoDisposeAsyncNotifier<void> {
     required String opportunityTitle,
     required String startupId,
     required String startupName,
-    required String studentResumeUrl,
   }) async {
     state = const AsyncLoading();
     try {
       final user = ref.read(currentUserProvider).valueOrNull;
       if (user == null) throw Exception('Must be signed in to apply');
+
+      final resumeUrl = user.resumeUrl;
+      if (resumeUrl == null || resumeUrl.trim().isEmpty) {
+        throw Exception('Please upload a resume on your profile before submitting your application.');
+      }
 
       final firestore = ref.read(firestoreProvider);
 
@@ -63,7 +67,7 @@ class ApplyController extends AutoDisposeAsyncNotifier<void> {
       }
 
       final repo = ref.read(applicationRepositoryProvider);
-      final id = firestore.collection('applications').doc().id;
+      final id = '${user.uid}_$opportunityId';
 
       final application = Application(
         id: id,
@@ -74,7 +78,8 @@ class ApplyController extends AutoDisposeAsyncNotifier<void> {
         studentId: user.uid,
         studentName: user.displayName,
         studentEmail: user.email,
-        studentResumeUrl: studentResumeUrl,
+        studentResumeUrl: resumeUrl,
+        studentPortfolioUrls: user.portfolioUrls,
         status: ApplicationStatus.applied,
         timeline: [
           ApplicationTimelineEvent(

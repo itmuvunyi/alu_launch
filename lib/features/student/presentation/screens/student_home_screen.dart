@@ -150,7 +150,7 @@ class StudentHomeScreen extends ConsumerWidget {
                       color: theme.colorScheme.secondary,
                       onTap: () {
                         // Switch tab to Applications using GoRouter
-                        StatefulNavigationShell.of(context).goBranch(2);
+                        context.go('/student/applications');
                       },
                     ),
                   ),
@@ -171,7 +171,7 @@ class StudentHomeScreen extends ConsumerWidget {
                   TextButton(
                     onPressed: () {
                       // Switch tab to Explore using GoRouter
-                      StatefulNavigationShell.of(context).goBranch(1);
+                      context.go('/student/explore');
                     },
                     child: const Text('See All'),
                   ),

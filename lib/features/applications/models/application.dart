@@ -30,6 +30,7 @@ abstract class Application with _$Application {
     required String studentName,
     required String studentEmail,
     String? studentResumeUrl,
+    List<String>? studentPortfolioUrls,
     @Default(ApplicationStatus.applied) ApplicationStatus status,
     required List<ApplicationTimelineEvent> timeline,
     @TimestampConverter() required DateTime createdAt,

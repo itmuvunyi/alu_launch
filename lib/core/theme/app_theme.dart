@@ -128,7 +128,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          minimumSize: const Size.fromHeight(AppSpacing.minTouchTarget),
+          minimumSize: const Size(64, AppSpacing.minTouchTarget),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -145,7 +145,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: colorScheme.primary,
-          minimumSize: const Size.fromHeight(AppSpacing.minTouchTarget),
+          minimumSize: const Size(64, AppSpacing.minTouchTarget),
           side: BorderSide(color: colorScheme.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           shape: RoundedRectangleBorder(
@@ -161,7 +161,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: colorScheme.primary,
-          minimumSize: const Size.fromHeight(AppSpacing.minTouchTarget),
+          minimumSize: const Size(64, AppSpacing.minTouchTarget),
           textStyle: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),

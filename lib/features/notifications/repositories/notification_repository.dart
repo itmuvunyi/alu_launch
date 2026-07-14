@@ -11,14 +11,17 @@ class NotificationRepository {
   Stream<List<NotificationModel>> streamNotifications(String userId) {
     return _collection
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => NotificationModel.fromJson({
-                  ...doc.data(),
-                  'id': doc.id,
-                }))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => NotificationModel.fromJson({
+                    ...doc.data(),
+                    'id': doc.id,
+                  }))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   Future<void> markAsRead(String id) async {
