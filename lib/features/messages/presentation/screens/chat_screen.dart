@@ -22,6 +22,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isStudentUser = true;
+  int? _lastMessageCount;
 
   @override
   void dispose() {
@@ -45,18 +46,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    final trimmedText = text.trim();
     _textController.clear();
     try {
       await ref.read(sendMessageControllerProvider.notifier).send(
             roomId: widget.roomId,
-            text: text,
+            text: trimmedText,
             isStudentSender: _isStudentUser,
           );
       _scrollToBottom();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send: $e')),
-      );
+      _textController.text = trimmedText; // Restore text on failure
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send: $e')),
+        );
+      }
     }
   }
 
@@ -141,9 +146,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       error: (err, st) => Center(child: Text('Error loading messages: $err')),
                       data: (messages) {
                         // Scroll bottom when messages load/change
-                        if (messages.isNotEmpty) {
+                        if (messages.isNotEmpty && (_lastMessageCount == null || messages.length > _lastMessageCount!)) {
                           _scrollToBottom();
                         }
+                        _lastMessageCount = messages.length;
 
                         if (messages.isEmpty) {
                           return Center(

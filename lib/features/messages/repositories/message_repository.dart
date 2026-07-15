@@ -113,11 +113,13 @@ class MessageRepository {
     final roomDocRef = _chatRoomsRef.doc(roomId);
 
     await _firestore.runTransaction((transaction) async {
-      // 1. Add message document
+      // 1. Read parent room first (All reads must precede writes in a transaction)
+      final roomSnap = await transaction.get(roomDocRef);
+
+      // 2. Add message document
       transaction.set(roomDocRef.collection('messages').doc(messageId), message.toJson());
 
-      // 2. Update room summary
-      final roomSnap = await transaction.get(roomDocRef);
+      // 3. Update room summary
       if (roomSnap.exists) {
         final currentData = roomSnap.data()!;
         final unreadStudent = (currentData['unreadByStudent'] as int?) ?? 0;

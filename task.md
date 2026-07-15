@@ -27,3 +27,11 @@
 - [x] Fix chat/messages Firestore permission rules for non-existent documents and participants
 - [x] Revert `roomId.startsWith(...)` to standard CEL checks in Firestore rules
 - [x] Replace StatefulNavigationShell with context.go for safe GoRouter redirect in apply flow
+- [x] Fix application creation rules using `opportunityId` in `firestore.rules`
+- [x] Handle resume/portfolio file picking, uploading, and database errors separately with proper SnackBar notifications
+- [x] Manage bottom sheet loading indicator state using local `modalSubmitting` and `setModalState`
+- [x] Correct chat transaction read/write ordering inside `sendMessage`
+- [x] Restrict chat auto-scroll animations only to new message additions to prevent jank
+- [x] Fix bookmarks creation rules checking `resource == null` in `firestore.rules`
+- [x] Implement try/catch blocks and success/error feedback SnackBar for bookmarks toggles in student screens
+- [x] Display real resume name/URL link using `url_launcher` in `ApplicationTrackingScreen`

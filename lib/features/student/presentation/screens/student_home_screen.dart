@@ -384,13 +384,38 @@ class StudentHomeScreen extends ConsumerWidget {
                       isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                       color: isBookmarked ? theme.colorScheme.primary : null,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       final userId = ref.read(currentUserIdProvider).valueOrNull;
-                      if (userId != null) {
-                        ref.read(internshipRepositoryProvider).toggleBookmark(
-                              userId: userId,
-                              opportunityId: opp.id,
-                            );
+                      if (userId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please sign in to bookmark opportunities.')),
+                        );
+                        return;
+                      }
+                      try {
+                        final repo = ref.read(internshipRepositoryProvider);
+                        await repo.toggleBookmark(
+                          userId: userId,
+                          opportunityId: opp.id,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isBookmarked
+                                    ? 'Bookmark removed successfully!'
+                                    : 'Opportunity bookmarked successfully!',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to update bookmark: $e')),
+                          );
+                        }
                       }
                     },
                   ),

@@ -292,41 +292,58 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
-      if (result != null) {
-        final file = result.files.single;
-        Uint8List? bytes = file.bytes;
-        if (bytes == null && file.path != null) {
-          bytes = await File(file.path!).readAsBytes();
-        }
-        if (bytes == null) {
-          throw Exception('Unable to read file bytes.');
-        }
+      if (result == null) return;
 
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const Center(child: CircularProgressIndicator()),
-          );
-        }
+      final file = result.files.single;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File selected: ${file.name}')),
+        );
+      }
 
+      Uint8List? bytes = file.bytes;
+      if (bytes == null && file.path != null) {
+        bytes = await File(file.path!).readAsBytes();
+      }
+      if (bytes == null) {
+        throw Exception('Unable to read file bytes.');
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      try {
         await ref.read(resumeUploadControllerProvider.notifier).upload(
               bytes: bytes,
               contentType: 'application/pdf',
               fileName: file.name,
             );
-
+        
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context); // Dismiss loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Resume uploaded successfully!')),
+            const SnackBar(content: Text('Upload to Supabase completed successfully!')),
+          );
+        }
+      } catch (uploadError) {
+        if (mounted) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.pop(context); // Dismiss loading dialog
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Supabase Storage upload failed: $uploadError')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload resume: $e')),
+          SnackBar(content: Text('File picking/reading failed: $e')),
         );
       }
     }
@@ -469,24 +486,32 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
       );
-      if (result != null) {
-        final file = result.files.single;
-        Uint8List? bytes = file.bytes;
-        if (bytes == null && file.path != null) {
-          bytes = await File(file.path!).readAsBytes();
-        }
-        if (bytes == null) {
-          throw Exception('Unable to read file bytes.');
-        }
+      if (result == null) return;
 
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const Center(child: CircularProgressIndicator()),
-          );
-        }
+      final file = result.files.single;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File selected: ${file.name}')),
+        );
+      }
 
+      Uint8List? bytes = file.bytes;
+      if (bytes == null && file.path != null) {
+        bytes = await File(file.path!).readAsBytes();
+      }
+      if (bytes == null) {
+        throw Exception('Unable to read file bytes.');
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      try {
         final contentType = file.name.endsWith('.pdf') ? 'application/pdf' : 'image/png';
         await ref.read(portfolioUploadControllerProvider.notifier).upload(
               bytes: bytes,
@@ -495,19 +520,25 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             );
 
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context); // Dismiss loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Portfolio file uploaded successfully!')),
+            const SnackBar(content: Text('Upload to Supabase completed successfully!')),
+          );
+        }
+      } catch (uploadError) {
+        if (mounted) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.pop(context); // Dismiss loading dialog
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Supabase Storage upload failed: $uploadError')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        if (Navigator.of(context).canPop()) {
-          Navigator.pop(context); // Dismiss loading indicator
-        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload portfolio file: $e')),
+          SnackBar(content: Text('File picking/reading failed: $e')),
         );
       }
     }

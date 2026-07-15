@@ -103,10 +103,10 @@ service cloud.firestore {
 
     // ---------- applications ----------
     match /applications/{applicationId} {
-      // Rule 3: composite doc ID must be `${studentId}_${internshipId}`.
+      // Rule 3: composite doc ID must be `${studentId}_${opportunityId}`.
       // Existence check on create prevents duplicates server-side, not just client-side.
       function isOwnApplication() {
-        return applicationId == request.resource.data.studentId + '_' + request.resource.data.internshipId;
+        return applicationId == request.resource.data.studentId + '_' + request.resource.data.opportunityId;
       }
 
       allow create: if isStudent() &&
@@ -134,8 +134,15 @@ service cloud.firestore {
 
     // ---------- bookmarks ----------
     match /bookmarks/{bookmarkId} {
+      allow get: if isStudent() && (
+        resource == null ||
+        resource.data.userId == uid()
+      );
+      allow list: if isStudent() && (
+        resource.data.userId == uid()
+      );
       allow create: if isStudent() && request.resource.data.userId == uid();
-      allow read, delete: if isStudent() && resource.data.userId == uid();
+      allow delete: if isStudent() && resource.data.userId == uid();
     }
 
     // ---------- chat_rooms & messages ----------

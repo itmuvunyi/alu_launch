@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
 import '../../models/application.dart';
@@ -54,7 +55,7 @@ class ApplicationTrackingScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         _buildCandidateInfoRow(context, 'Candidate', app.studentName),
                         _buildCandidateInfoRow(context, 'Email', app.studentEmail),
-                        _buildCandidateInfoRow(context, 'Submitted Resume', 'placeholder_resume.pdf'),
+                        _buildCandidateResumeRow(context, 'Submitted Resume', app.studentResumeUrl),
                       ],
                     ),
                   ),
@@ -89,6 +90,44 @@ class ApplicationTrackingScreen extends ConsumerWidget {
         children: [
           Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandidateResumeRow(BuildContext context, String label, String? url) {
+    final theme = Theme.of(context);
+    final filename = url != null ? url.split('/').last.split('?').first : 'No resume uploaded';
+    final hasUrl = url != null && url.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          if (hasUrl)
+            InkWell(
+              onTap: () async {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: Text(
+                filename,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            )
+          else
+            Text(
+              filename,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
         ],
       ),
     );
