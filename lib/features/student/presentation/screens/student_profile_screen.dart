@@ -24,6 +24,9 @@ class StudentProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
+  bool _isPickingFile = false;
+  bool _isPickingAvatar = false;
+
   // Experience adding dialog helper
   Future<void> _addExperienceDialog(BuildContext context, String userId, List<Map<String, dynamic>> currentExp) async {
     final titleController = TextEditingController();
@@ -287,14 +290,36 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
   }
 
   Future<void> _pickAndUploadResume() async {
+    if (_isPickingFile) {
+      debugPrint('Resume upload: Prevented duplicate picker call.');
+      return;
+    }
+    _isPickingFile = true;
+    FilePickerResult? result;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      debugPrint('Resume upload: File picking initiated.');
+      result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
-      if (result == null) return;
+    } catch (pickerError) {
+      debugPrint('Resume upload: Picker platform exception -> $pickerError');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File picker error: $pickerError')),
+        );
+      }
+    } finally {
+      _isPickingFile = false;
+    }
+    if (result == null) {
+      debugPrint('Resume upload: File picking cancelled or failed.');
+      return;
+    }
 
+    try {
       final file = result.files.single;
+      debugPrint('Resume upload: File selected -> ${file.name}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File selected: ${file.name}')),
@@ -303,6 +328,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
       Uint8List? bytes = file.bytes;
       if (bytes == null && file.path != null) {
+        debugPrint('Resume upload: Reading bytes from path -> ${file.path}');
         bytes = await File(file.path!).readAsBytes();
       }
       if (bytes == null) {
@@ -318,11 +344,13 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
       }
 
       try {
+        debugPrint('Resume upload: Supabase Storage upload started.');
         await ref.read(resumeUploadControllerProvider.notifier).upload(
               bytes: bytes,
               contentType: 'application/pdf',
               fileName: file.name,
             );
+        debugPrint('Resume upload: Supabase Storage upload completed & Firestore URL persisted successfully!');
         
         if (mounted) {
           Navigator.pop(context); // Dismiss loading dialog
@@ -331,6 +359,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
           );
         }
       } catch (uploadError) {
+        debugPrint('Resume upload: Storage/Firestore upload failed -> $uploadError');
         if (mounted) {
           if (Navigator.of(context).canPop()) {
             Navigator.pop(context); // Dismiss loading dialog
@@ -341,6 +370,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
         }
       }
     } catch (e) {
+      debugPrint('Resume upload: File picking/reading failed -> $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File picking/reading failed: $e')),
@@ -481,14 +511,36 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
   }
 
   Future<void> _pickAndUploadPortfolioFile() async {
+    if (_isPickingFile) {
+      debugPrint('Portfolio file upload: Prevented duplicate picker call.');
+      return;
+    }
+    _isPickingFile = true;
+    FilePickerResult? result;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      debugPrint('Portfolio file upload: File picking initiated.');
+      result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
       );
-      if (result == null) return;
+    } catch (pickerError) {
+      debugPrint('Portfolio file upload: Picker platform exception -> $pickerError');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File picker error: $pickerError')),
+        );
+      }
+    } finally {
+      _isPickingFile = false;
+    }
+    if (result == null) {
+      debugPrint('Portfolio file upload: File picking cancelled or failed.');
+      return;
+    }
 
+    try {
       final file = result.files.single;
+      debugPrint('Portfolio file upload: File selected -> ${file.name}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File selected: ${file.name}')),
@@ -497,6 +549,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
       Uint8List? bytes = file.bytes;
       if (bytes == null && file.path != null) {
+        debugPrint('Portfolio file upload: Reading bytes from path -> ${file.path}');
         bytes = await File(file.path!).readAsBytes();
       }
       if (bytes == null) {
@@ -513,11 +566,13 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
       try {
         final contentType = file.name.endsWith('.pdf') ? 'application/pdf' : 'image/png';
+        debugPrint('Portfolio file upload: Supabase Storage upload started.');
         await ref.read(portfolioUploadControllerProvider.notifier).upload(
               bytes: bytes,
               contentType: contentType,
               fileName: file.name,
             );
+        debugPrint('Portfolio file upload: Supabase Storage upload completed & Firestore URL persisted successfully!');
 
         if (mounted) {
           Navigator.pop(context); // Dismiss loading dialog
@@ -526,6 +581,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
           );
         }
       } catch (uploadError) {
+        debugPrint('Portfolio file upload: Storage/Firestore upload failed -> $uploadError');
         if (mounted) {
           if (Navigator.of(context).canPop()) {
             Navigator.pop(context); // Dismiss loading dialog
@@ -536,6 +592,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
         }
       }
     } catch (e) {
+      debugPrint('Portfolio file upload: File picking/reading failed -> $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File picking/reading failed: $e')),
@@ -639,8 +696,14 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                     title: InkWell(
                       onTap: () async {
                         final url = Uri.parse(link);
-                        if (await canLaunchUrl(url)) {
+                        try {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Could not open link: $e')),
+                            );
+                          }
                         }
                       },
                       child: Text(
@@ -826,8 +889,14 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                                                     onTap: () async {
                                                       Navigator.pop(context);
                                                       final url = Uri.parse(user.resumeUrl!);
-                                                      if (await canLaunchUrl(url)) {
+                                                      try {
                                                         await launchUrl(url, mode: LaunchMode.externalApplication);
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(content: Text('Could not open resume: $e')),
+                                                          );
+                                                        }
                                                       }
                                                     },
                                                   ),
@@ -859,7 +928,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: theme.colorScheme.primary,
-                                      foregroundColor: Colors.white,
+                                      foregroundColor: theme.colorScheme.onPrimary,
                                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                     ),
                                     onPressed: () {
@@ -927,18 +996,60 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                                 bottom: 0,
                                 right: 0,
                                 child: GestureDetector(
-                                  onTap: avatarState.isLoading
+                                  onTap: avatarState.isLoading || _isPickingAvatar
                                       ? null
                                       : () async {
-                                          final picker = ImagePicker();
-                                          final image = await picker.pickImage(source: ImageSource.gallery);
-                                          if (image != null) {
+                                          if (_isPickingAvatar) return;
+                                          _isPickingAvatar = true;
+                                          XFile? image;
+                                          try {
+                                            debugPrint('Avatar upload: Image picking initiated.');
+                                            final picker = ImagePicker();
+                                            image = await picker.pickImage(source: ImageSource.gallery);
+                                          } catch (pickerError) {
+                                            debugPrint('Avatar upload: Picker platform exception -> $pickerError');
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Image picker error: $pickerError')),
+                                              );
+                                            }
+                                          } finally {
+                                            _isPickingAvatar = false;
+                                          }
+                                          if (image == null) {
+                                            debugPrint('Avatar upload: Image picking cancelled or failed.');
+                                            return;
+                                          }
+
+                                          try {
+                                            debugPrint('Avatar upload: Image selected -> ${image.name}');
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Image selected: ${image.name}')),
+                                              );
+                                            }
+
                                             final bytes = await image.readAsBytes();
+                                            debugPrint('Avatar upload: Supabase Storage upload started.');
                                             await ref.read(avatarUploadControllerProvider.notifier).upload(
                                                   bytes: bytes,
                                                   contentType: image.mimeType ?? 'image/png',
                                                   fileName: image.name,
                                                 );
+                                            debugPrint('Avatar upload: Supabase Storage upload completed & Firestore URL persisted successfully!');
+
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Avatar uploaded successfully!')),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            debugPrint('Avatar upload: Failed -> $e');
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Avatar upload failed: $e')),
+                                              );
+                                            }
                                           }
                                         },
                                   child: CircleAvatar(

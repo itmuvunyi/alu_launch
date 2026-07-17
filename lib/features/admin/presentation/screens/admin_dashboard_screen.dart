@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
 import '../../../authentication/providers/auth_providers.dart';
@@ -45,21 +46,51 @@ class AdminDashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Welcome card
+            // Welcome card / Profile area
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Welcome, Admin ${user?.displayName ?? ''}!',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Account: ${user?.email ?? ''}',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome, Admin ${user?.displayName ?? ''}!',
+                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Account: ${user?.email ?? ''}',
+                                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                        DropdownButton<ThemeMode>(
+                          value: ref.watch(themeProvider),
+                          underline: const SizedBox(),
+                          icon: Icon(Icons.palette_outlined, color: theme.colorScheme.primary),
+                          items: const [
+                            DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                            DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                            DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                          ],
+                          onChanged: (mode) {
+                            if (mode != null) {
+                              ref.read(themeProvider.notifier).setThemeMode(mode);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Theme set to ${mode.name.toUpperCase()}')),
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

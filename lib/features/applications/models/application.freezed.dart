@@ -374,6 +374,7 @@ mixin _$Application {
   String? get studentResumeUrl;
   List<String>? get studentPortfolioUrls;
   ApplicationStatus get status;
+  @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
   List<ApplicationTimelineEvent> get timeline;
   @TimestampConverter()
   DateTime get createdAt;
@@ -465,6 +466,7 @@ abstract mixin class $ApplicationCopyWith<$Res> {
       String? studentResumeUrl,
       List<String>? studentPortfolioUrls,
       ApplicationStatus status,
+      @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
       List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() DateTime createdAt,
       @NullableTimestampConverter() DateTime? updatedAt});
@@ -663,6 +665,7 @@ extension ApplicationPatterns on Application {
             String? studentResumeUrl,
             List<String>? studentPortfolioUrls,
             ApplicationStatus status,
+            @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
             @NullableTimestampConverter() DateTime? updatedAt)?
@@ -719,6 +722,7 @@ extension ApplicationPatterns on Application {
             String? studentResumeUrl,
             List<String>? studentPortfolioUrls,
             ApplicationStatus status,
+            @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
             @NullableTimestampConverter() DateTime? updatedAt)
@@ -773,6 +777,7 @@ extension ApplicationPatterns on Application {
             String? studentResumeUrl,
             List<String>? studentPortfolioUrls,
             ApplicationStatus status,
+            @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
             List<ApplicationTimelineEvent> timeline,
             @TimestampConverter() DateTime createdAt,
             @NullableTimestampConverter() DateTime? updatedAt)?
@@ -817,6 +822,7 @@ class _Application implements Application {
       this.studentResumeUrl,
       final List<String>? studentPortfolioUrls,
       this.status = ApplicationStatus.applied,
+      @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
       required final List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() required this.createdAt,
       @NullableTimestampConverter() this.updatedAt})
@@ -859,6 +865,7 @@ class _Application implements Application {
   final ApplicationStatus status;
   final List<ApplicationTimelineEvent> _timeline;
   @override
+  @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
   List<ApplicationTimelineEvent> get timeline {
     if (_timeline is EqualUnmodifiableListView) return _timeline;
     // ignore: implicit_dynamic_type
@@ -964,6 +971,7 @@ abstract mixin class _$ApplicationCopyWith<$Res>
       String? studentResumeUrl,
       List<String>? studentPortfolioUrls,
       ApplicationStatus status,
+      @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
       List<ApplicationTimelineEvent> timeline,
       @TimestampConverter() DateTime createdAt,
       @NullableTimestampConverter() DateTime? updatedAt});

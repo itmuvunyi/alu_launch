@@ -10,11 +10,18 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../providers/startup_providers.dart';
 import '../../providers/startup_upload_controllers.dart';
 
-class StartupVerificationScreen extends ConsumerWidget {
+class StartupVerificationScreen extends ConsumerStatefulWidget {
   const StartupVerificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StartupVerificationScreen> createState() => _StartupVerificationScreenState();
+}
+
+class _StartupVerificationScreenState extends ConsumerState<StartupVerificationScreen> {
+  bool _isPickingFile = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final startupAsync = ref.watch(currentFounderStartupStreamProvider);
 
@@ -128,17 +135,57 @@ class StartupVerificationScreen extends ConsumerWidget {
                           else
                               ElevatedButton.icon(
                                 onPressed: () async {
-                                  final result = await FilePicker.platform.pickFiles(
-                                    type: FileType.custom,
-                                    allowedExtensions: ['pdf'],
-                                  );
-                                  if (result != null) {
+                                  if (_isPickingFile) {
+                                    debugPrint('Startup doc upload: Prevented duplicate picker call.');
+                                    return;
+                                  }
+                                  _isPickingFile = true;
+                                  FilePickerResult? result;
+                                  try {
+                                    debugPrint('Startup doc upload: File picking initiated.');
+                                    result = await FilePicker.platform.pickFiles(
+                                      type: FileType.custom,
+                                      allowedExtensions: ['pdf'],
+                                    );
+                                  } catch (pickerError) {
+                                    debugPrint('Startup doc upload: Picker platform exception -> $pickerError');
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('File picker error: $pickerError')),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isPickingFile = false;
+                                      });
+                                    }
+                                  }
+                                  if (result == null) {
+                                    debugPrint('Startup doc upload: File picking cancelled or failed.');
+                                    return;
+                                  }
+
+                                  try {
                                     final file = result.files.single;
+                                    debugPrint('Startup doc upload: File selected -> ${file.name}');
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('File selected: ${file.name}')),
+                                      );
+                                    }
+
                                     Uint8List? bytes = file.bytes;
                                     if (bytes == null && file.path != null) {
+                                      debugPrint('Startup doc upload: Reading bytes from path -> ${file.path}');
                                       bytes = await File(file.path!).readAsBytes();
                                     }
-                                    if (bytes != null) {
+                                    if (bytes == null) {
+                                      throw Exception('Unable to read file bytes.');
+                                    }
+
+                                    try {
+                                      debugPrint('Startup doc upload: Supabase Storage upload started.');
                                       await ref
                                           .read(verificationDocUploadControllerProvider(startup.id).notifier)
                                           .upload(
@@ -146,6 +193,27 @@ class StartupVerificationScreen extends ConsumerWidget {
                                             contentType: 'application/pdf',
                                             fileName: file.name,
                                           );
+                                      debugPrint('Startup doc upload: Supabase Storage upload completed & Firestore URL persisted successfully!');
+
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Verification document uploaded successfully!')),
+                                        );
+                                      }
+                                    } catch (uploadError) {
+                                      debugPrint('Startup doc upload: Storage/Firestore upload failed -> $uploadError');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Supabase Storage upload failed: $uploadError')),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    debugPrint('Startup doc upload: File picking/reading failed -> $e');
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('File picking/reading failed: $e')),
+                                      );
                                     }
                                   }
                                 },

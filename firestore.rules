@@ -67,7 +67,7 @@ service cloud.firestore {
     // ---------- startup_requests (verification submissions) ----------
     match /startup_requests/{requestId} {
       allow read: if isAdmin() ||
-        (isStartupFounder() && resource.data.founderId == uid());
+        (isStartupFounder() && (resource == null || resource.data.founderId == uid()));
       allow create: if isStartupFounder() && request.resource.data.founderId == uid();
       allow update: if isAdmin(); // approve/reject/request-info
       allow delete: if isAdmin();
@@ -78,8 +78,8 @@ service cloud.firestore {
       // Rule 2: students (and everyone else) can only ever READ approved
       // opportunities, UNLESS they're the owning startup or an admin.
       allow read: if isAdmin() ||
-        resource.data.status == 'approved' ||
-        (isStartupFounder() && ownsStartup(resource.data.startupId));
+        (resource == null || resource.data.status == 'approved') ||
+        (isStartupFounder() && (resource == null || ownsStartup(resource.data.startupId)));
       allow list: if isAdmin() ||
         (isStartupFounder() && ownsStartup(resource.data.startupId)) ||
         (resource.data.status == 'approved');
@@ -116,10 +116,10 @@ service cloud.firestore {
 
       // Rule 5: only the student who applied, the owning startup, or an admin may read.
       allow get: if isAdmin() ||
-        (isStudent() && resource.data.studentId == uid()) ||
-        (isStartupFounder() && ownsStartup(resource.data.startupId));
+        (isSignedIn() && (resource == null || resource.data.studentId == uid())) ||
+        (isStartupFounder() && (resource == null || ownsStartup(resource.data.startupId)));
       allow list: if isAdmin() ||
-        (isStudent() && resource.data.studentId == uid()) ||
+        (isSignedIn() && resource.data.studentId == uid()) ||
         (isStartupFounder() && ownsStartup(resource.data.startupId));
 
       // Students can withdraw/update their own cover letter pre-review;
@@ -134,11 +134,11 @@ service cloud.firestore {
 
     // ---------- bookmarks ----------
     match /bookmarks/{bookmarkId} {
-      allow get: if isStudent() && (
+      allow get: if isSignedIn() && (
         resource == null ||
         resource.data.userId == uid()
       );
-      allow list: if isStudent() && (
+      allow list: if isSignedIn() && (
         resource.data.userId == uid()
       );
       allow create: if isStudent() && request.resource.data.userId == uid();
@@ -153,8 +153,8 @@ service cloud.firestore {
         ownsStartup(resource.data.startupId)
       );
       allow list: if isAdmin() ||
-        (isStudent() && resource.data.studentId == uid()) ||
-        (isStartupFounder() && ownsStartup(resource.data.startupId));
+        (isSignedIn() && resource.data.studentId == uid()) ||
+        ownsStartup(resource.data.startupId);
       allow create: if isSignedIn() && (
         uid() == request.resource.data.studentId ||
         ownsStartup(request.resource.data.startupId)
@@ -166,6 +166,7 @@ service cloud.firestore {
       
       match /messages/{messageId} {
         allow read, create: if isSignedIn() && (
+          !exists(/databases/$(database)/documents/chat_rooms/$(roomId)) ||
           uid() == get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.studentId ||
           ownsStartup(get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.startupId)
         );
@@ -174,16 +175,21 @@ service cloud.firestore {
 
     // ---------- notifications ----------
     match /notifications/{notificationId} {
-      allow read, update: if isSignedIn() && resource.data.userId == uid();
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == uid());
+      allow list: if isSignedIn() && resource.data.userId == uid();
+      allow update: if isSignedIn() && resource.data.userId == uid();
       allow create: if isSignedIn() || isAdmin(); // written by backend/cloud functions typically
       allow delete: if isSignedIn() && resource.data.userId == uid();
     }
 
     // ---------- interviews ----------
     match /interviews/{interviewId} {
-      allow read: if isAdmin() ||
-        (isStudent() && resource.data.studentId == uid()) ||
-        (isStartupFounder() && ownsStartup(resource.data.startupId));
+      allow get: if isAdmin() ||
+        (isSignedIn() && (resource == null || resource.data.studentId == uid())) ||
+        (resource == null || ownsStartup(resource.data.startupId));
+      allow list: if isAdmin() ||
+        (isSignedIn() && resource.data.studentId == uid()) ||
+        ownsStartup(resource.data.startupId);
       allow create, update: if isStartupFounder() && ownsStartup(request.resource.data.startupId);
       allow update: if isAdmin();
       allow delete: if isAdmin();

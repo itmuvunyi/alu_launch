@@ -7,6 +7,7 @@ import '../../providers/internship_providers.dart';
 import '../../../applications/providers/application_providers.dart';
 import '../../../authentication/providers/auth_providers.dart';
 import '../../../messages/providers/message_providers.dart';
+import '../../../notifications/providers/notification_providers.dart';
 import '../../models/opportunity.dart';
 
 class OpportunityDetailsScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,24 @@ class OpportunityDetailsScreen extends ConsumerStatefulWidget {
 class _OpportunityDetailsScreenState extends ConsumerState<OpportunityDetailsScreen> {
   bool _isSubmitting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markOpportunityNotificationAsRead();
+    });
+  }
+
+  Future<void> _markOpportunityNotificationAsRead() async {
+    final userId = ref.read(currentUserIdProvider).valueOrNull;
+    if (userId != null) {
+      await ref.read(notificationRepositoryProvider).markOpportunityNotificationAsRead(
+            userId,
+            widget.opportunityId,
+          );
+    }
+  }
+
   Future<void> _handleApply(Opportunity opp) async {
     setState(() => _isSubmitting = true);
     try {
@@ -32,21 +51,30 @@ class _OpportunityDetailsScreenState extends ConsumerState<OpportunityDetailsScr
           );
 
       if (!mounted) return;
+      Navigator.of(context).pop(); // Close bottom sheet first so SnackBar is visible
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Application submitted successfully!')),
       );
-      Navigator.of(context).pop(); // Close bottom sheet
       context.go('/student/applications');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit application: $e')),
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Application Error'),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
-
   void _showApplyBottomSheet(Opportunity opp) {
     bool modalSubmitting = false;
     showModalBottomSheet(

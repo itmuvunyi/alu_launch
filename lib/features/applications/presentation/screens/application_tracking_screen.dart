@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
+import '../../../../core/providers/firebase_providers.dart';
+import '../../../authentication/providers/auth_providers.dart';
+import '../../../notifications/providers/notification_providers.dart';
 import '../../models/application.dart';
 import '../../providers/application_providers.dart';
 
@@ -14,6 +17,15 @@ class ApplicationTrackingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    
+    // Auto-mark notifications for this application as read
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final userId = ref.read(currentUserIdProvider).valueOrNull;
+      if (userId != null) {
+        ref.read(notificationRepositoryProvider).markApplicationNotificationAsRead(userId, applicationId);
+      }
+    });
+
     final applicationAsync = ref.watch(applicationDetailsStreamProvider(applicationId));
 
     return Scaffold(
@@ -110,8 +122,14 @@ class ApplicationTrackingScreen extends ConsumerWidget {
             InkWell(
               onTap: () async {
                 final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
+                try {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Could not open resume: $e')),
+                    );
+                  }
                 }
               },
               child: Text(

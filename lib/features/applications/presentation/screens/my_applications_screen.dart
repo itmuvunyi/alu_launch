@@ -113,6 +113,7 @@ class MyApplicationsScreen extends ConsumerWidget {
     Color backgroundColor;
     Color textColor;
 
+    final isDark = theme.brightness == Brightness.dark;
     switch (status) {
       case ApplicationStatus.applied:
         backgroundColor = theme.colorScheme.primaryContainer.withValues(alpha: 0.15);
@@ -120,19 +121,19 @@ class MyApplicationsScreen extends ConsumerWidget {
         break;
       case ApplicationStatus.underReview:
         backgroundColor = Colors.orange.withValues(alpha: 0.15);
-        textColor = Colors.orange[800]!;
+        textColor = isDark ? Colors.orange[300]! : Colors.orange[800]!;
         break;
       case ApplicationStatus.shortlisted:
         backgroundColor = Colors.blue.withValues(alpha: 0.15);
-        textColor = Colors.blue[800]!;
+        textColor = isDark ? Colors.blue[300]! : Colors.blue[800]!;
         break;
       case ApplicationStatus.interviewScheduled:
         backgroundColor = Colors.purple.withValues(alpha: 0.15);
-        textColor = Colors.purple[800]!;
+        textColor = isDark ? Colors.purple[300]! : Colors.purple[800]!;
         break;
       case ApplicationStatus.accepted:
         backgroundColor = Colors.green.withValues(alpha: 0.15);
-        textColor = Colors.green[800]!;
+        textColor = isDark ? Colors.green[300]! : Colors.green[800]!;
         break;
       case ApplicationStatus.rejected:
         backgroundColor = theme.colorScheme.errorContainer.withValues(alpha: 0.15);

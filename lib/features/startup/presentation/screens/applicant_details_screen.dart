@@ -240,8 +240,14 @@ class ApplicantDetailsScreen extends ConsumerWidget {
                                 ElevatedButton.icon(
                                   onPressed: () async {
                                     final url = Uri.parse(app.studentResumeUrl!);
-                                    if (await canLaunchUrl(url)) {
+                                    try {
                                       await launchUrl(url, mode: LaunchMode.externalApplication);
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Could not open resume: $e')),
+                                        );
+                                      }
                                     }
                                   },
                                   icon: const Icon(Icons.open_in_new, size: 16),

@@ -34,6 +34,7 @@ class _StartupProfileEditScreenState extends ConsumerState<StartupProfileEditScr
   String? _logoUrl;
   bool _initialized = false;
   String? _startupId;
+  bool _isPickingLogo = false;
 
   @override
   void initState() {
@@ -125,13 +126,43 @@ class _StartupProfileEditScreenState extends ConsumerState<StartupProfileEditScr
                       child: Column(
                         children: [
                           GestureDetector(
-                            onTap: uploadState.isLoading
+                            onTap: uploadState.isLoading || _isPickingLogo
                                 ? null
                                 : () async {
-                                    final picker = ImagePicker();
-                                    final image = await picker.pickImage(source: ImageSource.gallery);
-                                    if (image != null) {
+                                    if (_isPickingLogo) return;
+                                    _isPickingLogo = true;
+                                    XFile? image;
+                                    try {
+                                      debugPrint('Startup logo upload: Image picking initiated.');
+                                      final picker = ImagePicker();
+                                      image = await picker.pickImage(source: ImageSource.gallery);
+                                    } catch (pickerError) {
+                                      debugPrint('Startup logo upload: Picker platform exception -> $pickerError');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Image picker error: $pickerError')),
+                                        );
+                                      }
+                                    } finally {
+                                      setState(() {
+                                        _isPickingLogo = false;
+                                      });
+                                    }
+                                    if (image == null) {
+                                      debugPrint('Startup logo upload: Image picking cancelled or failed.');
+                                      return;
+                                    }
+
+                                    try {
+                                      debugPrint('Startup logo upload: Image selected -> ${image.name}');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Image selected: ${image.name}')),
+                                        );
+                                      }
+
                                       final bytes = await image.readAsBytes();
+                                      debugPrint('Startup logo upload: Supabase Storage upload started.');
                                       await ref
                                           .read(startupLogoUploadControllerProvider(_startupId!).notifier)
                                           .upload(
@@ -139,6 +170,20 @@ class _StartupProfileEditScreenState extends ConsumerState<StartupProfileEditScr
                                             contentType: image.mimeType ?? 'image/png',
                                             fileName: image.name,
                                           );
+                                      debugPrint('Startup logo upload: Supabase Storage upload completed & Firestore URL persisted successfully!');
+
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Logo uploaded successfully!')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      debugPrint('Startup logo upload: Failed -> $e');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Logo upload failed: $e')),
+                                        );
+                                      }
                                     }
                                   },
                             child: Stack(

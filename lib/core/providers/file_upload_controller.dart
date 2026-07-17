@@ -55,13 +55,16 @@ abstract class FileUploadController extends AutoDisposeAsyncNotifier<String?> {
       state = AsyncData(url);
     } on FileValidationException catch (e, st) {
       state = AsyncError(e, st);
+      rethrow;
     } on StorageException catch (e, st) {
       state = AsyncError(e, st);
+      rethrow;
     } catch (e, st) {
       state = AsyncError(
         const StorageException('Something went wrong. Please try again.'),
         st,
       );
+      rethrow;
     }
   }
 }

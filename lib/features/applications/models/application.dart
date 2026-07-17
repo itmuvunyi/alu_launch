@@ -6,6 +6,16 @@ import '../../../core/utils/firestore_converters.dart';
 part 'application.freezed.dart';
 part 'application.g.dart';
 
+List<ApplicationTimelineEvent> _timelineFromJson(List<dynamic> json) {
+  return json
+      .map((e) => ApplicationTimelineEvent.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
+
+List<Map<String, dynamic>> _timelineToJson(List<ApplicationTimelineEvent> timeline) {
+  return timeline.map((e) => e.toJson()).toList();
+}
+
 @freezed
 abstract class ApplicationTimelineEvent with _$ApplicationTimelineEvent {
   const factory ApplicationTimelineEvent({
@@ -32,6 +42,7 @@ abstract class Application with _$Application {
     String? studentResumeUrl,
     List<String>? studentPortfolioUrls,
     @Default(ApplicationStatus.applied) ApplicationStatus status,
+    @JsonKey(fromJson: _timelineFromJson, toJson: _timelineToJson)
     required List<ApplicationTimelineEvent> timeline,
     @TimestampConverter() required DateTime createdAt,
     @NullableTimestampConverter() DateTime? updatedAt,

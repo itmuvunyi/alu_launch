@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/constants/firestore_paths.dart';
 import '../../../authentication/providers/auth_providers.dart';
@@ -103,6 +104,44 @@ class StartupDashboardScreen extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: const Text('Create Startup Profile'),
                     ),
+                    const SizedBox(height: 32),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.palette_outlined, size: 20, color: theme.colorScheme.primary),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Theme Mode',
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            DropdownButton<ThemeMode>(
+                              value: ref.watch(themeProvider),
+                              underline: const SizedBox(),
+                              items: const [
+                                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                              ],
+                              onChanged: (mode) {
+                                if (mode != null) {
+                                  ref.read(themeProvider.notifier).setThemeMode(mode);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Theme set to ${mode.name.toUpperCase()}')),
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -120,39 +159,77 @@ class StartupDashboardScreen extends ConsumerWidget {
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainer,
-                            shape: BoxShape.circle,
-                          ),
-                          child: startup.logoUrl != null
-                              ? ClipOval(child: Image.network(startup.logoUrl!, fit: BoxFit.cover))
-                              : Icon(Icons.business, color: theme.colorScheme.primary),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                startup.name,
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainer,
+                                shape: BoxShape.circle,
                               ),
-                              Text(
-                                '${startup.industry} • ${startup.location}',
-                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              child: startup.logoUrl != null
+                                  ? ClipOval(child: Image.network(startup.logoUrl!, fit: BoxFit.cover))
+                                  : Icon(Icons.business, color: theme.colorScheme.primary),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    startup.name,
+                                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    '${startup.industry} • ${startup.location}',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: 'Edit Profile',
+                              onPressed: () => context.push('/startup/profile-edit'),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined),
-                          tooltip: 'Edit Profile',
-                          onPressed: () => context.push('/startup/profile-edit'),
+                        const Divider(height: AppSpacing.lg),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.palette_outlined, size: 20, color: theme.colorScheme.primary),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Theme Mode',
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            DropdownButton<ThemeMode>(
+                              value: ref.watch(themeProvider),
+                              underline: const SizedBox(),
+                              items: const [
+                                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                              ],
+                              onChanged: (mode) {
+                                if (mode != null) {
+                                  ref.read(themeProvider.notifier).setThemeMode(mode);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Theme set to ${mode.name.toUpperCase()}')),
+                                  );
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -266,7 +343,10 @@ class StartupDashboardScreen extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Your startup is verified. Your posted listings are visible to students.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.green[800], fontWeight: FontWeight.w600),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.brightness == Brightness.dark ? Colors.green[300] : Colors.green[800],
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -295,7 +375,10 @@ class StartupDashboardScreen extends ConsumerWidget {
                   hasUploaded
                       ? 'Verification document submitted. Awaiting ALU Admin review.'
                       : 'Verification Required: Submit legal documents to publish internships.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.orange[800], fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.brightness == Brightness.dark ? Colors.orange[300] : Colors.orange[800],
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

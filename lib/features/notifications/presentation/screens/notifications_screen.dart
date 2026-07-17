@@ -150,9 +150,9 @@ class NotificationsScreen extends ConsumerWidget {
                     if (context.mounted && n.payload != null) {
                       final payload = n.payload!;
                       if (n.type == 'applicationStatusChanged' && payload.containsKey('applicationId')) {
-                        context.push('/student/applications/tracking/${payload['applicationId']}');
+                        context.push('/student/application-tracking/${payload['applicationId']}');
                       } else if (n.type == 'newOpportunity' && payload.containsKey('opportunityId')) {
-                        context.push('/opportunity/${payload['opportunityId']}');
+                        context.push('/student/opportunity/${payload['opportunityId']}');
                       }
                     }
                   },

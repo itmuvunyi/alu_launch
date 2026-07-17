@@ -24,18 +24,50 @@ class OpportunityApprovalScreen extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
-            .collection(FirestoreCollections.internships)
-            .doc(opp.id)
-            .update({'status': OpportunityStatus.approved.name});
+        final batch = FirebaseFirestore.instance.batch();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Internship "${opp.title}" successfully published!')),
-        );
+        // 1. Update listing status to approved
+        final oppRef = FirebaseFirestore.instance
+            .collection(FirestoreCollections.internships)
+            .doc(opp.id);
+        batch.update(oppRef, {'status': OpportunityStatus.approved.name});
+
+        // 2. Fetch all student users to generate notifications
+        final studentsSnapshot = await FirebaseFirestore.instance
+            .collection(FirestoreCollections.users)
+            .where('role', isEqualTo: 'student')
+            .get();
+
+        for (var doc in studentsSnapshot.docs) {
+          final notifyRef = FirebaseFirestore.instance
+              .collection(FirestoreCollections.notifications)
+              .doc();
+          batch.set(notifyRef, {
+            'userId': doc.id,
+            'title': 'New Opportunity: ${opp.title}',
+            'body': '${opp.startupName} is looking for a ${opp.title}! Tap to view and apply.',
+            'type': 'newOpportunity',
+            'payload': {
+              'opportunityId': opp.id,
+            },
+            'isRead': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        await batch.commit();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Internship "${opp.title}" successfully published and students notified!')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to publish: $e')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to publish: $e')),
+          );
+        }
       }
     }
   }

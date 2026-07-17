@@ -9,15 +9,15 @@ final startupRepositoryProvider = Provider<StartupRepository>((ref) {
   return StartupRepository();
 });
 
-final startupDetailsProvider = FutureProvider.family<Startup?, String>((ref, id) {
+final startupDetailsProvider = FutureProvider.autoDispose.family<Startup?, String>((ref, id) {
   return ref.watch(startupRepositoryProvider).getStartupById(id);
 });
 
-final startupDetailsStreamProvider = StreamProvider.family<Startup?, String>((ref, id) {
+final startupDetailsStreamProvider = StreamProvider.autoDispose.family<Startup?, String>((ref, id) {
   return ref.watch(startupRepositoryProvider).watchStartupById(id);
 });
 
-final currentFounderStartupStreamProvider = StreamProvider<Startup?>((ref) {
+final currentFounderStartupStreamProvider = StreamProvider.autoDispose<Startup?>((ref) {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return Stream.value(null);
 

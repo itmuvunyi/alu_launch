@@ -7,7 +7,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepository();
 });
 
-final notificationsStreamProvider = StreamProvider<List<NotificationModel>>((ref) {
+final notificationsStreamProvider = StreamProvider.autoDispose<List<NotificationModel>>((ref) {
   final userAsync = ref.watch(currentUserProvider);
   final user = userAsync.valueOrNull;
 
@@ -18,7 +18,7 @@ final notificationsStreamProvider = StreamProvider<List<NotificationModel>>((ref
   return ref.read(notificationRepositoryProvider).streamNotifications(user.uid);
 });
 
-final unreadNotificationsCountProvider = Provider<int>((ref) {
+final unreadNotificationsCountProvider = Provider.autoDispose<int>((ref) {
   final notifications = ref.watch(notificationsStreamProvider).valueOrNull ?? [];
   return notifications.where((n) => !n.isRead).length;
 });

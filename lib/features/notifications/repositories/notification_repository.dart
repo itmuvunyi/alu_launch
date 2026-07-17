@@ -42,6 +42,48 @@ class NotificationRepository {
     await batch.commit();
   }
 
+  Future<void> markOpportunityNotificationAsRead(String userId, String opportunityId) async {
+    final snapshot = await _collection
+        .where('userId', isEqualTo: userId)
+        .where('type', isEqualTo: 'newOpportunity')
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _firestore.batch();
+    var hasUpdates = false;
+    for (var doc in snapshot.docs) {
+      final payload = doc.data()['payload'] as Map<String, dynamic>?;
+      if (payload != null && payload['opportunityId'] == opportunityId) {
+        batch.update(doc.reference, {'isRead': true});
+        hasUpdates = true;
+      }
+    }
+    if (hasUpdates) {
+      await batch.commit();
+    }
+  }
+
+  Future<void> markApplicationNotificationAsRead(String userId, String applicationId) async {
+    final snapshot = await _collection
+        .where('userId', isEqualTo: userId)
+        .where('type', isEqualTo: 'applicationStatusChanged')
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _firestore.batch();
+    var hasUpdates = false;
+    for (var doc in snapshot.docs) {
+      final payload = doc.data()['payload'] as Map<String, dynamic>?;
+      if (payload != null && payload['applicationId'] == applicationId) {
+        batch.update(doc.reference, {'isRead': true});
+        hasUpdates = true;
+      }
+    }
+    if (hasUpdates) {
+      await batch.commit();
+    }
+  }
+
   Future<void> sendNotification({
     required String userId,
     required String title,

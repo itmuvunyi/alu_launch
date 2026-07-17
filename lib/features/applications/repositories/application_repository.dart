@@ -84,11 +84,54 @@ class ApplicationRepository {
       
       final updatedTimeline = [...currentTimeline, newEvent];
       
-      transaction.update(docRef, {
-        'status': newStatus.name,
-        'timeline': updatedTimeline,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final oldStatus = currentData['status'] as String?;
+      if (oldStatus != newStatus.name) {
+        transaction.update(docRef, {
+          'status': newStatus.name,
+          'timeline': updatedTimeline,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Generate a notification document atomically inside the same transaction
+        final studentId = currentData['studentId'] as String;
+        final opportunityTitle = currentData['opportunityTitle'] as String;
+        
+        String statusDescription;
+        switch (newStatus) {
+          case ApplicationStatus.applied:
+            statusDescription = 'submitted';
+            break;
+          case ApplicationStatus.underReview:
+            statusDescription = 'put under review';
+            break;
+          case ApplicationStatus.shortlisted:
+            statusDescription = 'shortlisted';
+            break;
+          case ApplicationStatus.interviewScheduled:
+            statusDescription = 'scheduled for an interview';
+            break;
+          case ApplicationStatus.accepted:
+            statusDescription = 'accepted';
+            break;
+          case ApplicationStatus.rejected:
+            statusDescription = 'rejected';
+            break;
+        }
+
+        final notificationRef = _firestore.collection(FirestoreCollections.notifications).doc();
+        transaction.set(notificationRef, {
+          'userId': studentId,
+          'title': 'Application Status Update',
+          'body': 'Your application for $opportunityTitle has been $statusDescription.',
+          'type': 'applicationStatusChanged',
+          'payload': {
+            'applicationId': applicationId,
+            'status': newStatus.name,
+          },
+          'isRead': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     });
   }
 }

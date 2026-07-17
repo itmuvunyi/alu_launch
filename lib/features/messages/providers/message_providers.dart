@@ -7,7 +7,7 @@ final messageRepositoryProvider = Provider<MessageRepository>((ref) {
   return MessageRepository();
 });
 
-final studentChatRoomsStreamProvider = StreamProvider<List<ChatRoom>>((ref) {
+final studentChatRoomsStreamProvider = StreamProvider.autoDispose<List<ChatRoom>>((ref) {
   final userAsync = ref.watch(currentUserProvider);
   final user = userAsync.valueOrNull;
   if (user == null) return Stream.value([]);
@@ -15,15 +15,15 @@ final studentChatRoomsStreamProvider = StreamProvider<List<ChatRoom>>((ref) {
   return ref.watch(messageRepositoryProvider).watchChatRoomsForStudent(user.uid);
 });
 
-final startupChatRoomsStreamProvider = StreamProvider.family<List<ChatRoom>, String>((ref, startupId) {
+final startupChatRoomsStreamProvider = StreamProvider.autoDispose.family<List<ChatRoom>, String>((ref, startupId) {
   return ref.watch(messageRepositoryProvider).watchChatRoomsForStartup(startupId);
 });
 
-final chatMessagesStreamProvider = StreamProvider.family<List<ChatMessage>, String>((ref, roomId) {
+final chatMessagesStreamProvider = StreamProvider.autoDispose.family<List<ChatMessage>, String>((ref, roomId) {
   return ref.watch(messageRepositoryProvider).watchMessages(roomId);
 });
 
-final chatRoomStreamProvider = StreamProvider.family<ChatRoom?, String>((ref, roomId) {
+final chatRoomStreamProvider = StreamProvider.autoDispose.family<ChatRoom?, String>((ref, roomId) {
   return ref.watch(messageRepositoryProvider).watchChatRoom(roomId);
 });
 

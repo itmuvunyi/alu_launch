@@ -9,17 +9,17 @@ final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {
   return ApplicationRepository();
 });
 
-final studentApplicationsStreamProvider = StreamProvider<List<Application>>((ref) {
+final studentApplicationsStreamProvider = StreamProvider.autoDispose<List<Application>>((ref) {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return Stream.value([]);
   return ref.watch(applicationRepositoryProvider).watchStudentApplications(userId);
 });
 
-final applicationDetailsStreamProvider = StreamProvider.family<Application?, String>((ref, id) {
+final applicationDetailsStreamProvider = StreamProvider.autoDispose.family<Application?, String>((ref, id) {
   return ref.watch(applicationRepositoryProvider).watchApplicationById(id);
 });
 
-final startupApplicationsStreamProvider = StreamProvider.family<List<Application>, String>((ref, startupId) {
+final startupApplicationsStreamProvider = StreamProvider.autoDispose.family<List<Application>, String>((ref, startupId) {
   return ref.watch(applicationRepositoryProvider).watchStartupApplications(startupId);
 });
 

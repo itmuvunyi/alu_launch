@@ -7,17 +7,17 @@ final internshipRepositoryProvider = Provider<InternshipRepository>((ref) {
   return InternshipRepository();
 });
 
-final opportunitiesStreamProvider = StreamProvider<List<Opportunity>>((ref) {
+final opportunitiesStreamProvider = StreamProvider.autoDispose<List<Opportunity>>((ref) {
   return ref.watch(internshipRepositoryProvider).watchOpportunities();
 });
 
-final bookmarkedIdsStreamProvider = StreamProvider<List<String>>((ref) {
+final bookmarkedIdsStreamProvider = StreamProvider.autoDispose<List<String>>((ref) {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return Stream.value([]);
   return ref.watch(internshipRepositoryProvider).watchBookmarkedIds(userId);
 });
 
-final bookmarkedOpportunitiesStreamProvider = StreamProvider<List<Opportunity>>((ref) {
+final bookmarkedOpportunitiesStreamProvider = StreamProvider.autoDispose<List<Opportunity>>((ref) {
   final opportunities = ref.watch(opportunitiesStreamProvider).valueOrNull ?? [];
   final bookmarkedIds = ref.watch(bookmarkedIdsStreamProvider).valueOrNull ?? [];
   return Stream.value(
@@ -25,6 +25,6 @@ final bookmarkedOpportunitiesStreamProvider = StreamProvider<List<Opportunity>>(
   );
 });
 
-final opportunityDetailsProvider = FutureProvider.family<Opportunity?, String>((ref, id) {
+final opportunityDetailsProvider = FutureProvider.autoDispose.family<Opportunity?, String>((ref, id) {
   return ref.watch(internshipRepositoryProvider).getOpportunityById(id);
 });
